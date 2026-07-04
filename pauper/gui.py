@@ -169,6 +169,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.test_entry.set_width_chars(1)
         self.test_entry.set_placeholder_text("Test speech")
         self.test_entry.set_text("Hello from Pauper.")
+        self.test_entry.connect("activate", lambda _entry: self.speak_test())
         test_box.append(self.test_entry)
 
         test_button = Gtk.Button.new_from_icon_name("media-playback-start-symbolic")

@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.7" date="2026-07-05">
+      <description>
+        <p>Submit the GTK test speech field with the Enter key.</p>
+      </description>
+    </release>
     <release version="0.1.6" date="2026-07-05">
       <description>
         <p>Avoid blocking ONNX Runtime model loading while filtering native logs.</p>
