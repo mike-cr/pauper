@@ -1,0 +1,46 @@
+# Editor/indexer files
+.tags
+tags
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# Python build outputs
+build/
+dist/
+wheelhouse/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test/tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Debian package build outputs
+/.debhelper/
+/debian/.debhelper/
+/debian/files
+/debian/*.debhelper
+/debian/*.substvars
+/debian/pauper/
+/*.build
+/*.buildinfo
+/*.changes
+/*.deb
+/*.dsc
+/*.tar.*
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.part

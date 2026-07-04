@@ -1,0 +1,14 @@
+[Unit]
+Description=Pauper resident TTS daemon
+Documentation=man:pauperd(1)
+After=pipewire.service pipewire-pulse.service pulseaudio.service
+
+[Service]
+Type=simple
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/usr/bin/pauperd
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

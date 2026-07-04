@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.mike_cr.Pauper</id>
+  <name>Pauper</name>
+  <summary>Manage the Pauper speech service</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="io.github.mike_cr">
+    <name>Mike Cribbens</name>
+  </developer>
+  <description>
+    <p>
+      Pauper keeps a selected Piper text-to-speech voice loaded in memory and exposes
+      it to Speech Dispatcher through a lightweight local service.
+    </p>
+    <p>
+      The manager is designed for phone-sized Linux devices and can download voices,
+      preview samples, choose speakers, and control daemon memory behavior.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/mike-cr/pauper</url>
+  <url type="bugtracker">https://github.com/mike-cr/pauper/issues</url>
+  <url type="vcs-browser">https://github.com/mike-cr/pauper</url>
+  <launchable type="desktop-id">io.github.mike_cr.Pauper.desktop</launchable>
+  <content_rating type="oars-1.1" />
+  <branding>
+    <color type="primary" scheme_preference="light">#2f7d68</color>
+    <color type="primary" scheme_preference="dark">#2f7d68</color>
+  </branding>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/downloaded.png</image>
+      <caption>Browse downloaded voices and choose the synthesis voice</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/settings.png</image>
+      <caption>Configure loading behavior, audio output, and ONNX provider</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/about.png</image>
+      <caption>View app information and project links</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.1.0" date="2026-07-04">
+      <description>
+        <p>Initial Pauper release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

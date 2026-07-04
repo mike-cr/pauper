@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pauper"
+version = "0.1.0"
+description = "Pauper resident TTS service with Speech Dispatcher integration and a phone-friendly GTK manager"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "pauper contributors" }]
+dependencies = [
+    "piper-tts",
+]
+
+[project.urls]
+Homepage = "https://github.com/mike-cr/pauper"
+
+[project.scripts]
+pauperd = "pauper.daemon:main"
+pauper-cli = "pauper.client:main"
+pauper-gtk = "pauper.gui:main"
+
+[tool.setuptools]
+packages = ["pauper", "pauper.resources"]
+
+[tool.setuptools.package-data]
+pauper = ["resources/voices.json", "resources/samples/*"]

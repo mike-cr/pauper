@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Pauper
+Comment=Manage the Pauper speech service
+Exec=/usr/bin/env PYTHONNOUSERSITE=1 pauper-gtk
+Icon=io.github.mike_cr.Pauper
+Categories=Utility;Accessibility;
+Terminal=false
+StartupNotify=true

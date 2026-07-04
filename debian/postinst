@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --global enable pauper.service >/dev/null 2>&1 || true
+fi
+
+PRIVATE_PYTHON=/usr/lib/pauper/python
+mkdir -p "$PRIVATE_PYTHON"
+
+if ! PYTHONPATH="$PRIVATE_PYTHON${PYTHONPATH:+:$PYTHONPATH}" python3 -c 'import piper; import pathvalidate' >/dev/null 2>&1; then
+    python3 -m pip install --target "$PRIVATE_PYTHON" --no-cache-dir --no-deps --upgrade piper-tts pathvalidate
+fi
+
+# The package installs the Speech Dispatcher module file and an example
+# speechd.conf snippet, but does not edit per-user Speech Dispatcher configs.
+echo "pauper: Speech Dispatcher module installed at /etc/speech-dispatcher/modules/pauper-generic.conf" >&2
+echo "pauper: example user speechd.conf snippet installed at /usr/share/doc/pauper/examples/speechd-pauper.conf" >&2
+echo "pauper: copy or merge that snippet into ~/.config/speech-dispatcher/speechd.conf to make Speech Dispatcher use Pauper." >&2
+
+#DEBHELPER#
+
+exit 0

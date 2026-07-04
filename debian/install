@@ -1,0 +1,6 @@
+data/systemd/user/pauper.service usr/lib/systemd/user/
+data/speech-dispatcher/modules/pauper-generic.conf etc/speech-dispatcher/modules/
+data/speech-dispatcher/speechd-pauper.conf usr/share/doc/pauper/examples/
+data/applications/io.github.mike_cr.Pauper.desktop usr/share/applications/
+data/metainfo/io.github.mike_cr.Pauper.metainfo.xml usr/share/metainfo/
+data/icons/hicolor/scalable/apps/io.github.mike_cr.Pauper.svg usr/share/icons/hicolor/scalable/apps/
