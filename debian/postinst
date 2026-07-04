@@ -13,7 +13,7 @@ find "$PRIVATE_PYTHON" -maxdepth 1 \( \
     \) -exec rm -rf {} +
 
 if ! PYTHONPATH="$PRIVATE_PYTHON${PYTHONPATH:+:$PYTHONPATH}" python3 -c 'import piper; import pathvalidate' >/dev/null 2>&1; then
-    python3 -m pip install --target "$PRIVATE_PYTHON" --no-cache-dir --no-deps --upgrade piper-tts pathvalidate
+    python3 -m pip install --target "$PRIVATE_PYTHON" --root-user-action=ignore --no-cache-dir --no-deps --upgrade piper-tts pathvalidate
 fi
 
 # The package installs the Speech Dispatcher module file and an example

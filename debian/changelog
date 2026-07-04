@@ -1,3 +1,10 @@
+pauper (0.1.9) unstable; urgency=medium
+
+  * Suppress pip's root-user warning when installing Pauper's private Python
+    dependencies into /usr/lib/pauper/python during package configuration.
+
+ -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 01:20:00 +1200
+
 pauper (0.1.8) unstable; urgency=medium
 
   * Preserve the GTK voice list scroll position when a model download

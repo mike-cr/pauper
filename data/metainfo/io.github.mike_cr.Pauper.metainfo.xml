@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.9" date="2026-07-05">
+      <description>
+        <p>Suppress pip's root-user warning during private dependency installation.</p>
+      </description>
+    </release>
     <release version="0.1.8" date="2026-07-05">
       <description>
         <p>Keep the voice list scroll position when downloads complete.</p>
