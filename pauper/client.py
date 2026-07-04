@@ -12,7 +12,7 @@ from typing import Any
 from . import __version__
 from .config import load_config
 from .paths import socket_path
-from .protocol import connect_socket, recv_json_line, send_json
+from .protocol import connect_socket, recv_exactly, recv_json_line_socket, send_json
 from .voices import Voice
 from .voices import download_voice as download_voice_file
 from .voices import find_installed_voice, list_installed, load_catalog
@@ -26,13 +26,18 @@ PLAYBACK_TIMEOUT = 30.0
 def request(payload: dict[str, Any], socket: Path, timeout: float = 5.0) -> tuple[dict[str, Any], bytes]:
     with connect_socket(socket, timeout=timeout) as sock:
         send_json(sock, payload)
-        file_obj = sock.makefile("rb")
-        header = recv_json_line(file_obj)
+        sock.setblocking(False)
+        header, body_start = recv_json_line_socket(sock, timeout)
         if not header.get("ok"):
             raise RuntimeError(str(header.get("error", "request failed")))
 
         size = int(header.get("bytes") or 0)
-        body = file_obj.read(size) if size else b""
+        if size:
+            body = body_start[:size]
+            if len(body) < size:
+                body += recv_exactly(sock, size - len(body), timeout)
+        else:
+            body = b""
         if len(body) != size:
             raise RuntimeError("short audio response from pauperd")
         return header, body

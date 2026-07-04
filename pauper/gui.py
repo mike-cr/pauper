@@ -1394,7 +1394,7 @@ def gui_request(payload: dict[str, Any]):
         raise RuntimeError("pauperd is not running") from exc
     except ConnectionRefusedError as exc:
         raise RuntimeError("pauperd is not accepting connections") from exc
-    except socket.timeout as exc:
+    except (TimeoutError, socket.timeout) as exc:
         raise RuntimeError("pauperd did not respond") from exc
     except OSError as exc:
         if "Operation not permitted" in str(exc):
