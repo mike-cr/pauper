@@ -1,3 +1,9 @@
+pauper (0.1.10) unstable; urgency=medium
+
+  * Update AppStream screenshots with current FuriPhone captures.
+
+ -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 01:30:00 +1200
+
 pauper (0.1.9) unstable; urgency=medium
 
   * Suppress pip's root-user warning when installing Pauper's private Python
