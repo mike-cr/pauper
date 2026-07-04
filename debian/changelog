@@ -1,3 +1,13 @@
+pauper (0.1.2) unstable; urgency=medium
+
+  * Prevent pauperd from importing the separate Python onnx package after
+    ONNX Runtime is loaded, avoiding duplicate ONNX schema registration log
+    messages during voice loading.
+  * Remove stale private onnx and onnxruntime files more broadly from
+    /usr/lib/pauper/python during package configuration.
+
+ -- pauper contributors <noreply@example.invalid>  Sat, 04 Jul 2026 23:35:00 +1200
+
 pauper (0.1.1) unstable; urgency=medium
 
   * Improve phone-sized GTK layout by reducing window width requirements,
@@ -9,8 +19,8 @@ pauper (0.1.1) unstable; urgency=medium
   * Create the default TOML configuration file on first run when it is missing.
   * Prefer system ONNX Runtime over Pauper's private Piper target path to avoid
     duplicate ONNX schema registration errors.
-  * Remove stale private onnx and onnxruntime installs during package
-    configuration.
+  * Block the separate Python onnx package in the daemon and remove stale
+    private onnx and onnxruntime installs during package configuration.
   * Format CLI voice status without redundant speaker details for
     single-speaker voices.
   * Update AppStream release metadata for 0.1.1.

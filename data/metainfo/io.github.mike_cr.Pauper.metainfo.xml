@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.2" date="2026-07-04">
+      <description>
+        <p>Avoid duplicate ONNX schema registration messages when voices are loaded.</p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-07-04">
       <description>
         <p>Update mobile UI layout and package metadata.</p>

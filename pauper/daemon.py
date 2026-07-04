@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.abc
 import json
 import logging
 import os
@@ -13,6 +14,18 @@ from typing import Any
 
 import onnxruntime
 from .paths import private_python_dir
+
+
+class BlockOnnxPackage(importlib.abc.MetaPathFinder):
+    """Prevent the separate onnx package from sharing this process with ORT."""
+
+    def find_spec(self, fullname: str, path: object = None, target: object = None) -> None:
+        if fullname == "onnx" or fullname.startswith("onnx."):
+            raise ModuleNotFoundError("pauperd uses onnxruntime directly and does not load the onnx package")
+        return None
+
+
+sys.meta_path.insert(0, BlockOnnxPackage())
 
 PRIVATE_PYTHON = private_python_dir()
 if PRIVATE_PYTHON.exists():
