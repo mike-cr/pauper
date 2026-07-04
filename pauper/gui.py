@@ -28,6 +28,7 @@ from .providers import best_provider, ranked_provider_info, ranked_provider_name
 from .voices import delete_voice as delete_voice_file
 from .voices import download_voice as download_voice_file
 from .voices import is_downloaded_voice, list_installed, load_catalog, voice_paths
+from .voices import speaker_count_for_voice_id
 
 
 class SpeakerOption(GObject.GObject):
@@ -45,7 +46,8 @@ class SpeakerOption(GObject.GObject):
 class ManagerWindow(Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application) -> None:
         super().__init__(application=app, title="Pauper")
-        self.set_default_size(390, 760)
+        self.set_default_size(300, 760)
+        self.set_size_request(240, 360)
         self.voices: list[dict[str, Any]] = []
         self.status: dict[str, Any] = {}
         self.sample_process: subprocess.Popen | None = None
@@ -85,17 +87,16 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.set_content(self.stack)
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        root.set_margin_top(12)
-        root.set_margin_bottom(12)
-        root.set_margin_start(12)
-        root.set_margin_end(12)
+        root.set_margin_top(10)
+        root.set_margin_bottom(10)
+        root.set_margin_start(8)
+        root.set_margin_end(8)
         self.stack.add_named(root, "voices")
 
-        page_actions = Gtk.CenterBox()
-        title_spacer = Gtk.Box()
-        title_spacer.set_size_request(88, -1)
+        page_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        title_box.set_halign(Gtk.Align.CENTER)
+        title_box.set_hexpand(True)
+        title_box.set_halign(Gtk.Align.START)
         title_logo = self.app_logo_image(24)
         title_logo.set_valign(Gtk.Align.CENTER)
         title_box.append(title_logo)
@@ -111,9 +112,8 @@ class ManagerWindow(Adw.ApplicationWindow):
         settings_button.connect("clicked", lambda _button: self.show_settings_page())
         header_buttons.append(about_button)
         header_buttons.append(settings_button)
-        page_actions.set_start_widget(title_spacer)
-        page_actions.set_center_widget(title_box)
-        page_actions.set_end_widget(header_buttons)
+        page_actions.append(title_box)
+        page_actions.append(header_buttons)
         root.append(page_actions)
 
         state_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -124,9 +124,9 @@ class ManagerWindow(Adw.ApplicationWindow):
         default_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         default_name = Gtk.Label(label="Default", xalign=0)
         default_name.add_css_class("dim-label")
-        default_name.set_width_chars(10)
+        default_name.set_width_chars(8)
         self.default_label = Gtk.Label(label="Unknown", xalign=0)
-        self.default_label.set_hexpand(False)
+        self.default_label.set_hexpand(True)
         self.default_label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         default_row.append(default_name)
         default_row.append(self.default_label)
@@ -135,9 +135,9 @@ class ManagerWindow(Adw.ApplicationWindow):
         synthesis_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         synthesis_name = Gtk.Label(label="Synthesis", xalign=0)
         synthesis_name.add_css_class("dim-label")
-        synthesis_name.set_width_chars(10)
+        synthesis_name.set_width_chars(8)
         self.synthesis_label = Gtk.Label(label="Unknown", xalign=0)
-        self.synthesis_label.set_hexpand(False)
+        self.synthesis_label.set_hexpand(True)
         self.synthesis_label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         synthesis_row.append(synthesis_name)
         synthesis_row.append(self.synthesis_label)
@@ -146,34 +146,27 @@ class ManagerWindow(Adw.ApplicationWindow):
         memory_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         memory_name = Gtk.Label(label="In memory", xalign=0)
         memory_name.add_css_class("dim-label")
-        memory_name.set_width_chars(10)
+        memory_name.set_width_chars(8)
         self.memory_label = Gtk.Label(label="Unknown", xalign=0)
-        self.memory_label.set_hexpand(False)
+        self.memory_label.set_hexpand(True)
         self.memory_label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         memory_row.append(memory_name)
         memory_row.append(self.memory_label)
-        self.unload_button = icon_label_button("edit-clear-symbolic", "Unload")
-        self.unload_button.connect("clicked", lambda _button: self.unload_voice())
-        self.unload_button.set_sensitive(False)
-        memory_row.append(self.unload_button)
         state_panel.append(memory_row)
 
-        top_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        self.message_label = Gtk.Label(xalign=0)
-        self.message_label.set_hexpand(False)
-        self.message_label.set_ellipsize(Pango.EllipsizeMode.END)
-        self.message_label.set_max_width_chars(32)
-        self.message_label.add_css_class("dim-label")
-        top_actions.append(self.message_label)
-        self.retry_button = icon_label_button("view-refresh-symbolic", "Retry")
-        self.retry_button.connect("clicked", lambda _button: self.refresh())
-        self.retry_button.set_visible(False)
-        top_actions.append(self.retry_button)
-        root.append(top_actions)
+        memory_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        memory_actions.set_halign(Gtk.Align.START)
+        self.unload_button = icon_label_button("media-eject-symbolic", "Unload")
+        self.unload_button.set_tooltip_text("Unload voice")
+        self.unload_button.connect("clicked", lambda _button: self.unload_voice())
+        self.unload_button.set_sensitive(False)
+        memory_actions.append(self.unload_button)
+        state_panel.append(memory_actions)
 
         test_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.test_entry = Gtk.Entry()
         self.test_entry.set_hexpand(True)
+        self.test_entry.set_width_chars(1)
         self.test_entry.set_placeholder_text("Test speech")
         self.test_entry.set_text("Hello from Pauper.")
         test_box.append(self.test_entry)
@@ -185,21 +178,20 @@ class ManagerWindow(Adw.ApplicationWindow):
         test_box.append(test_button)
         root.append(test_box)
 
-        filters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        filters.add_css_class("linked")
+        filters = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         self.language_dropdown = Gtk.DropDown()
-        self.language_dropdown.set_hexpand(True)
+        configure_string_dropdown(self.language_dropdown)
         self.language_dropdown.connect("notify::selected", lambda _dropdown, _param: self.populate_list())
         filters.append(self.language_dropdown)
 
         self.quality_dropdown = Gtk.DropDown()
-        self.quality_dropdown.set_hexpand(True)
+        configure_string_dropdown(self.quality_dropdown)
         self.quality_dropdown.connect("notify::selected", lambda _dropdown, _param: self.populate_list())
         filters.append(self.quality_dropdown)
 
         self.install_state_dropdown = Gtk.DropDown()
-        self.install_state_dropdown.set_hexpand(True)
+        configure_string_dropdown(self.install_state_dropdown)
         self.install_state_dropdown.set_model(
             Gtk.StringList.new(["Any download state", "Downloaded only", "Not downloaded"])
         )
@@ -222,6 +214,22 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self.voices_scroller.set_child(self.listbox)
         root.append(self.voices_scroller)
+
+        top_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        top_actions.set_visible(False)
+        self.top_actions = top_actions
+        self.message_label = Gtk.Label(xalign=0)
+        self.message_label.set_hexpand(True)
+        self.message_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.message_label.set_max_width_chars(24)
+        self.message_label.add_css_class("dim-label")
+        top_actions.append(self.message_label)
+        self.retry_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
+        self.retry_button.set_tooltip_text("Retry daemon connection")
+        self.retry_button.connect("clicked", lambda _button: self.refresh())
+        self.set_retry_visible(False)
+        top_actions.append(self.retry_button)
+        root.append(top_actions)
 
         self.stack.add_named(self.settings_page(), "settings")
         self.stack.add_named(self.about_page(), "about")
@@ -286,91 +294,91 @@ class ManagerWindow(Adw.ApplicationWindow):
 
     def settings_page(self) -> Gtk.Widget:
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        page.set_margin_top(12)
-        page.set_margin_bottom(12)
-        page.set_margin_start(12)
-        page.set_margin_end(12)
+        page.set_margin_top(10)
+        page.set_margin_bottom(10)
+        page.set_margin_start(8)
+        page.set_margin_end(8)
 
-        settings_top = Gtk.CenterBox()
+        settings_top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         back_button = Gtk.Button.new_from_icon_name("go-previous-symbolic")
         back_button.set_tooltip_text("Back to voices")
         back_button.connect("clicked", lambda _button: self.show_voices_page())
         settings_title = Gtk.Label(label="Settings")
         settings_title.add_css_class("title-2")
+        settings_title.set_hexpand(True)
+        settings_title.set_halign(Gtk.Align.CENTER)
         settings_spacer = Gtk.Box()
-        settings_spacer.set_size_request(42, -1)
-        settings_top.set_start_widget(back_button)
-        settings_top.set_center_widget(settings_title)
-        settings_top.set_end_widget(settings_spacer)
+        settings_spacer.set_hexpand(True)
+        settings_top.append(back_button)
+        settings_top.append(settings_title)
+        settings_top.append(settings_spacer)
         page.append(settings_top)
 
         group = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         group.add_css_class("boxed-list")
         group.set_halign(Gtk.Align.CENTER)
+        group.set_size_request(180, -1)
         page.append(group)
 
-        lazy_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        lazy_row.set_halign(Gtk.Align.CENTER)
+        lazy_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        lazy_row.set_halign(Gtk.Align.FILL)
         lazy_label = Gtk.Label(label="Load on demand", xalign=0)
-        lazy_label.set_width_chars(14)
+        lazy_label.add_css_class("dim-label")
         self.lazy_switch = Gtk.Switch()
         self.lazy_switch.set_valign(Gtk.Align.CENTER)
         self.lazy_switch.connect("notify::active", lambda _switch, _param: self.settings_changed())
         self.lazy_value_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.lazy_value_box.set_halign(Gtk.Align.START)
         self.lazy_switch.set_halign(Gtk.Align.END)
-        lazy_spacer = Gtk.Box()
-        lazy_spacer.set_hexpand(True)
-        self.lazy_value_box.append(lazy_spacer)
         self.lazy_value_box.append(self.lazy_switch)
         lazy_row.append(lazy_label)
         lazy_row.append(self.lazy_value_box)
         group.append(lazy_row)
 
-        retention_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        retention_row.set_halign(Gtk.Align.CENTER)
+        retention_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        retention_row.set_halign(Gtk.Align.FILL)
         retention_label = Gtk.Label(label="Retain models", xalign=0)
-        retention_label.set_width_chars(14)
+        retention_label.add_css_class("dim-label")
         self.retention_dropdown = Gtk.DropDown()
+        configure_string_dropdown(self.retention_dropdown)
         self.retention_dropdown.set_model(Gtk.StringList.new(self.retention_labels))
         self.retention_dropdown.connect("notify::selected", lambda _dropdown, _param: self.settings_changed())
         retention_row.append(retention_label)
         retention_row.append(self.retention_dropdown)
         group.append(retention_row)
 
-        output_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        output_row.set_halign(Gtk.Align.CENTER)
+        output_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        output_row.set_halign(Gtk.Align.FILL)
         output_label = Gtk.Label(label="Audio output", xalign=0)
-        output_label.set_width_chars(14)
+        output_label.add_css_class("dim-label")
         self.output_dropdown = Gtk.DropDown()
+        configure_string_dropdown(self.output_dropdown)
         self.output_dropdown.set_model(Gtk.StringList.new(self.audio_output_labels))
         self.output_dropdown.connect("notify::selected", lambda _dropdown, _param: self.settings_changed())
         output_row.append(output_label)
         output_row.append(self.output_dropdown)
         group.append(output_row)
 
-        provider_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        provider_row.set_halign(Gtk.Align.CENTER)
+        provider_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        provider_row.set_halign(Gtk.Align.FILL)
         provider_label = Gtk.Label(label="ONNX provider", xalign=0)
-        provider_label.set_width_chars(14)
+        provider_label.add_css_class("dim-label")
         self.provider_dropdown = Gtk.DropDown()
+        configure_string_dropdown(self.provider_dropdown)
         self.provider_dropdown.set_model(Gtk.StringList.new(self.provider_labels))
         self.provider_dropdown.connect("notify::selected", lambda _dropdown, _param: self.provider_selection_changed())
         provider_row.append(provider_label)
         provider_row.append(self.provider_dropdown)
         group.append(provider_row)
 
-        provider_info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        provider_info_row.set_halign(Gtk.Align.CENTER)
-        provider_info_spacer = Gtk.Label(label="")
-        provider_info_spacer.set_width_chars(14)
+        provider_info_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        provider_info_row.set_halign(Gtk.Align.FILL)
         self.provider_info_label = Gtk.Label(xalign=0)
         self.provider_info_label.add_css_class("dim-label")
         self.provider_info_label.set_wrap(True)
         self.provider_info_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-        self.provider_info_label.set_width_chars(22)
-        self.provider_info_label.set_max_width_chars(22)
-        provider_info_row.append(provider_info_spacer)
+        self.provider_info_label.set_width_chars(16)
+        self.provider_info_label.set_max_width_chars(16)
         provider_info_row.append(self.provider_info_label)
         group.append(provider_info_row)
 
@@ -378,10 +386,10 @@ class ManagerWindow(Adw.ApplicationWindow):
 
     def about_page(self) -> Gtk.Widget:
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        page.set_margin_top(12)
-        page.set_margin_bottom(12)
-        page.set_margin_start(12)
-        page.set_margin_end(12)
+        page.set_margin_top(10)
+        page.set_margin_bottom(10)
+        page.set_margin_start(8)
+        page.set_margin_end(8)
 
         about_top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         back_button = Gtk.Button.new_from_icon_name("go-previous-symbolic")
@@ -452,8 +460,8 @@ class ManagerWindow(Adw.ApplicationWindow):
     def refresh(self) -> None:
         self.refresh_generation += 1
         generation = self.refresh_generation
-        self.message_label.set_text("Connecting to pauperd...")
-        self.retry_button.set_visible(False)
+        self.set_message("Connecting to pauperd...")
+        self.set_retry_visible(False)
         self.run_background(lambda: self.load_state(generation))
 
     def load_state(self, generation: int) -> None:
@@ -478,8 +486,8 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.voices = voices
         self.update_state_labels()
         self.update_settings_controls()
-        self.message_label.set_text("")
-        self.retry_button.set_visible(False)
+        self.set_message("")
+        self.set_retry_visible(False)
         self.schedule_status_poll()
         self.populate_filters()
         self.populate_list()
@@ -494,8 +502,8 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.voices = voices
         self.update_state_labels()
         self.update_settings_controls()
-        self.message_label.set_text(f"Error: {error}")
-        self.retry_button.set_visible(is_daemon_connection_error(error))
+        self.set_message(f"Error: {error}")
+        self.set_retry_visible(is_daemon_connection_error(error))
         self.cancel_status_poll()
         self.populate_filters()
         self.populate_list()
@@ -544,8 +552,8 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.daemon_available = False
         self.cancel_status_poll()
         self.status, _voices = offline_state(self.voices)
-        self.message_label.set_text(f"Error: {error}")
-        self.retry_button.set_visible(is_daemon_connection_error(error))
+        self.set_message(f"Error: {error}")
+        self.set_retry_visible(is_daemon_connection_error(error))
         self.update_state_labels()
         self.update_settings_controls()
         self.populate_list()
@@ -558,22 +566,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.default_label.set_text(format_voice_with_speaker(configured, self.status.get("configured_speaker")))
         self.synthesis_label.set_text(format_voice_with_speaker(synthesis, self.status.get("synthesis_speaker")))
         self.memory_label.set_text(format_voice_with_speaker(loaded, self.status.get("loaded_speaker")))
-        self.update_state_value_widths()
         self.unload_button.set_sensitive(self.daemon_available and bool(self.status.get("loaded_voice") or self.status.get("loaded_model_path")))
-
-    def update_state_value_widths(self) -> None:
-        width = bounded_chars(
-            [
-                self.default_label.get_text(),
-                self.synthesis_label.get_text(),
-                self.memory_label.get_text(),
-            ],
-            minimum=8,
-            maximum=22,
-        )
-        for label in (self.default_label, self.synthesis_label, self.memory_label):
-            label.set_width_chars(width)
-            label.set_max_width_chars(width)
 
     def update_settings_controls(self) -> None:
         self.updating_settings = True
@@ -615,8 +608,8 @@ class ManagerWindow(Adw.ApplicationWindow):
     def update_settings_value_widths(self) -> None:
         width = value_width_pixels([*self.retention_labels, *self.provider_labels, *self.audio_output_labels, "Off"])
         for widget in (self.lazy_value_box, self.retention_dropdown, self.provider_dropdown, self.output_dropdown):
-            widget.set_size_request(width, -1)
-        self.provider_info_label.set_size_request(width, -1)
+            widget.set_size_request(min(width, 118), -1)
+        self.provider_info_label.set_size_request(min(width, 118), -1)
 
     def provider_selection_changed(self) -> None:
         if self.updating_settings:
@@ -650,7 +643,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             "execution_provider": self.selected_provider(),
             "audio_output": self.selected_audio_output(),
         }
-        self.message_label.set_text("Saving settings...")
+        self.set_message("Saving settings...")
         self.run_background(lambda: self.save_settings(payload))
 
     def save_settings(self, payload: dict[str, Any]) -> None:
@@ -675,7 +668,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.clear_message)
 
     def clear_message(self) -> bool:
-        self.message_label.set_text("")
+        self.set_message("")
         return GLib.SOURCE_REMOVE
 
     def populate_filters(self) -> None:
@@ -803,7 +796,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         title = Gtk.Label(label=language, xalign=0)
         title.set_hexpand(True)
         title.add_css_class("heading")
-        title.set_ellipsize(Pango.EllipsizeMode.END)
+        make_shrinking_label(title, 14)
         box.append(title)
 
         badge = Gtk.Label(label=str(count))
@@ -817,23 +810,25 @@ class ManagerWindow(Adw.ApplicationWindow):
         row.set_selectable(False)
         row.set_activatable(False)
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        outer.set_margin_top(12)
-        outer.set_margin_bottom(12)
-        outer.set_margin_start(12)
-        outer.set_margin_end(12)
+        outer.set_margin_top(10)
+        outer.set_margin_bottom(10)
+        outer.set_margin_start(8)
+        outer.set_margin_end(8)
         row.set_child(outer)
 
         text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         text_box.set_hexpand(True)
         title = Gtk.Label(label=self.voice_title(voice), xalign=0)
-        title.set_ellipsize(Pango.EllipsizeMode.END)
+        make_shrinking_label(title, 18)
         title.add_css_class("heading")
         voice_id_label = Gtk.Label(label=str(voice.get("id", "")), xalign=0)
-        voice_id_label.set_ellipsize(Pango.EllipsizeMode.END)
+        make_shrinking_label(voice_id_label, 20)
         voice_id_label.add_css_class("dim-label")
         status = Gtk.Label(label=self.voice_status_text(voice), xalign=0)
+        make_shrinking_label(status, 18)
         status.add_css_class("dim-label")
         details = Gtk.Label(label=self.voice_detail_text(voice), xalign=0)
+        make_shrinking_label(details, 18)
         details.add_css_class("dim-label")
         text_box.append(title)
         text_box.append(voice_id_label)
@@ -845,13 +840,12 @@ class ManagerWindow(Adw.ApplicationWindow):
         speaker_options = self.speaker_options(voice)
         voice_id = voice.get("id")
         if len(speaker_options) > 1 and isinstance(voice_id, str):
-            speaker_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            speaker_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             speaker_label = Gtk.Label(label="Speaker", xalign=0)
             speaker_label.add_css_class("dim-label")
             speaker_row.append(speaker_label)
             dropdown = Gtk.DropDown()
-            dropdown.set_hexpand(False)
-            dropdown.set_size_request(220, -1)
+            dropdown.set_hexpand(True)
             dropdown.set_model(speaker_option_model(speaker_options))
             dropdown.set_factory(speaker_option_factory())
             dropdown.set_list_factory(speaker_option_factory())
@@ -861,14 +855,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             speaker_row.append(dropdown)
             outer.append(speaker_row)
 
-        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        left_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        spacer = Gtk.Box()
-        spacer.set_hexpand(True)
-        right_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        controls.append(left_controls)
-        controls.append(spacer)
-        controls.append(right_controls)
+        controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         outer.append(controls)
 
         if samples or speaker_options:
@@ -882,7 +869,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             if isinstance(voice.get("id"), str):
                 self.sample_buttons[voice["id"]] = sample_button
             self.update_sample_button_for_voice(voice)
-            left_controls.append(sample_button)
+            controls.append(sample_button)
 
         if voice.get("installed"):
             if self.voice_matches_status(voice, "configured"):
@@ -893,7 +880,7 @@ class ManagerWindow(Adw.ApplicationWindow):
                 default_button = icon_label_button("starred-symbolic", "Set default")
                 default_button.set_tooltip_text("Set as default")
                 default_button.connect("clicked", lambda _button, item=voice: self.set_default_voice(item))
-            left_controls.append(default_button)
+            controls.append(default_button)
 
             if self.voice_matches_status(voice, "synthesis"):
                 button = icon_label_button("object-select-symbolic", "Selected")
@@ -905,18 +892,18 @@ class ManagerWindow(Adw.ApplicationWindow):
                 button.connect("clicked", lambda _button, item=voice: self.load_voice(item))
             default_button.set_sensitive(default_button.get_sensitive() and self.daemon_available)
             button.set_sensitive(button.get_sensitive() and self.daemon_available)
-            left_controls.append(button)
+            controls.append(button)
             if voice.get("deletable"):
                 delete_button = icon_label_button("user-trash-symbolic", "Delete")
                 delete_button.set_tooltip_text("Delete downloaded voice")
                 delete_button.add_css_class("destructive-action")
                 delete_button.connect("clicked", lambda _button, item=voice: self.delete_voice(item))
-                right_controls.append(delete_button)
+                controls.append(delete_button)
         else:
             button = icon_label_button("folder-download-symbolic", "Download")
             button.set_tooltip_text("Download voice")
             button.connect("clicked", lambda _button, voice_id=voice["id"]: self.download_voice(voice_id))
-            left_controls.append(button)
+            controls.append(button)
         return row
 
     def voice_samples(self, voice: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1050,13 +1037,13 @@ class ManagerWindow(Adw.ApplicationWindow):
     def set_default_voice(self, voice: dict[str, Any]) -> None:
         voice_id = str(voice.get("id"))
         speaker = self.selected_speaker_id(voice)
-        self.message_label.set_text(f"Setting default to {voice_id}...")
+        self.set_message(f"Setting default to {voice_id}...")
         self.run_background(lambda: self.call_then_refresh(self.voice_daemon_payload("set_default", voice, speaker)))
 
     def load_voice(self, voice: dict[str, Any]) -> None:
         voice_id = str(voice.get("id"))
         speaker = self.selected_speaker_id(voice)
-        self.message_label.set_text(f"Selecting {voice_id} for synthesis...")
+        self.set_message(f"Selecting {voice_id} for synthesis...")
         self.run_background(lambda: self.call_then_refresh(self.voice_daemon_payload("set_synthesis", voice, speaker)))
 
     def voice_daemon_payload(self, action: str, voice: dict[str, Any], speaker: int | None) -> dict[str, Any]:
@@ -1079,7 +1066,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         }
 
     def download_voice(self, voice_id: str) -> None:
-        self.message_label.set_text(f"Downloading {voice_id}...")
+        self.set_message(f"Downloading {voice_id}...")
         self.run_background(lambda: self.download_voice_locally(voice_id))
 
     def download_voice_locally(self, voice_id: str) -> None:
@@ -1115,7 +1102,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         if not isinstance(voice_id, str):
             return
 
-        self.message_label.set_text(f"Deleting {voice_id}...")
+        self.set_message(f"Deleting {voice_id}...")
         self.run_background(lambda: self.delete_voice_locally(voice))
 
     def delete_voice_locally(self, voice: dict[str, Any]) -> None:
@@ -1134,7 +1121,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.refresh)
 
     def unload_voice(self) -> None:
-        self.message_label.set_text("Unloading voice...")
+        self.set_message("Unloading voice...")
         self.run_background(lambda: self.call_then_refresh({"action": "unload_voice"}))
 
     def speak_test(self) -> None:
@@ -1151,7 +1138,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             return
 
         self.stop_sample()
-        self.message_label.set_text(f"Playing sample for {voice_id}")
+        self.set_message(f"Playing sample for {voice_id}")
         self.run_background(lambda: self.start_sample_playback(voice))
 
     def synthesize_and_play(self, text: str) -> None:
@@ -1230,7 +1217,7 @@ class ManagerWindow(Adw.ApplicationWindow):
             self.sample_voice_id = None
             self.update_sample_buttons()
             if return_code == 0:
-                self.message_label.set_text("")
+                self.set_message("")
         return GLib.SOURCE_REMOVE
 
     def stop_sample(self) -> None:
@@ -1240,7 +1227,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.sample_process = None
         self.sample_voice_id = None
         self.update_sample_buttons()
-        self.message_label.set_text("")
+        self.set_message("")
 
     def update_sample_buttons(self) -> None:
         for voice_id, button in self.sample_buttons.items():
@@ -1287,8 +1274,8 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.status = dict(status)
         self.update_state_labels()
         self.update_settings_controls()
-        self.message_label.set_text("")
-        self.retry_button.set_visible(False)
+        self.set_message("")
+        self.set_retry_visible(False)
         self.schedule_status_poll()
         self.populate_list()
         return GLib.SOURCE_REMOVE
@@ -1301,7 +1288,7 @@ class ManagerWindow(Adw.ApplicationWindow):
                     voice.update(downloaded)
                     voice["installed"] = True
                     break
-            self.message_label.set_text("")
+            self.set_message("")
             self.populate_list()
         return GLib.SOURCE_REMOVE
 
@@ -1315,7 +1302,7 @@ class ManagerWindow(Adw.ApplicationWindow):
                     voice["model_path"] = deleted.get("model_path")
                     voice["config_path"] = deleted.get("config_path")
                     break
-            self.message_label.set_text("")
+            self.set_message("")
             self.populate_list()
         return GLib.SOURCE_REMOVE
 
@@ -1330,9 +1317,17 @@ class ManagerWindow(Adw.ApplicationWindow):
 
     def show_error(self, message: str) -> bool:
         friendly = friendly_error(message)
-        self.message_label.set_text(f"Error: {friendly}")
-        self.retry_button.set_visible(is_daemon_connection_error(friendly))
+        self.set_message(f"Error: {friendly}")
+        self.set_retry_visible(is_daemon_connection_error(friendly))
         return GLib.SOURCE_REMOVE
+
+    def set_message(self, message: str) -> None:
+        self.message_label.set_text(message)
+        self.top_actions.set_visible(bool(message) or self.retry_button.get_visible())
+
+    def set_retry_visible(self, visible: bool) -> None:
+        self.retry_button.set_visible(visible)
+        self.top_actions.set_visible(bool(self.message_label.get_text()) or visible)
 
 
 class ManagerApp(Adw.Application):
@@ -1358,6 +1353,17 @@ class ManagerApp(Adw.Application):
             list.voice-list row.voice-header:selected:hover {
               background: none;
               box-shadow: none;
+            }
+            dropdown label,
+            button label,
+            entry,
+            flowbox,
+            row,
+            list {
+              min-width: 0;
+            }
+            button {
+              min-width: 0;
             }
             """
         )
@@ -1601,7 +1607,7 @@ def status_like_voice_matches(status: dict[str, Any], voice: dict[str, Any], pre
 def format_voice_with_speaker(voice_id: str, speaker_id: Any) -> str:
     if not voice_id or voice_id == "None":
         return "None"
-    if isinstance(speaker_id, int):
+    if isinstance(speaker_id, int) and speaker_count_for_voice_id(voice_id) != 1:
         return f"{voice_id} / Speaker {speaker_id}"
     return voice_id
 
@@ -1612,8 +1618,8 @@ def bounded_chars(values: list[str], minimum: int, maximum: int) -> int:
 
 
 def value_width_pixels(values: list[str]) -> int:
-    chars = bounded_chars(values, minimum=8, maximum=22)
-    return (chars * 7) + 50
+    chars = bounded_chars(values, minimum=8, maximum=16)
+    return (chars * 7) + 42
 
 
 def is_daemon_connection_error(message: str) -> bool:
@@ -1635,9 +1641,42 @@ def set_button_content(button: Gtk.Button, icon_name: str, label: str) -> None:
     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     box.append(Gtk.Image.new_from_icon_name(icon_name))
     text = Gtk.Label(label=label)
-    text.set_ellipsize(Pango.EllipsizeMode.END)
+    make_shrinking_label(text, 8)
     box.append(text)
     button.set_child(box)
+
+
+def make_shrinking_label(label: Gtk.Label, max_chars: int) -> None:
+    label.set_ellipsize(Pango.EllipsizeMode.END)
+    label.set_width_chars(1)
+    label.set_max_width_chars(max_chars)
+
+
+def configure_string_dropdown(dropdown: Gtk.DropDown) -> None:
+    factory = string_option_factory()
+    dropdown.set_factory(factory)
+    dropdown.set_list_factory(string_option_factory())
+    dropdown.set_hexpand(True)
+    dropdown.set_size_request(1, -1)
+
+
+def string_option_factory() -> Gtk.SignalListItemFactory:
+    factory = Gtk.SignalListItemFactory()
+
+    def setup(_factory, list_item) -> None:
+        label = Gtk.Label(xalign=0)
+        make_shrinking_label(label, 18)
+        list_item.set_child(label)
+
+    def bind(_factory, list_item) -> None:
+        label = list_item.get_child()
+        item = list_item.get_item()
+        if isinstance(label, Gtk.Label) and isinstance(item, Gtk.StringObject):
+            label.set_text(item.get_string())
+
+    factory.connect("setup", setup)
+    factory.connect("bind", bind)
+    return factory
 
 
 def speaker_option_model(options: list[SpeakerOption]) -> Gio.ListStore:
@@ -1652,7 +1691,7 @@ def speaker_option_factory() -> Gtk.SignalListItemFactory:
 
     def setup(_factory, list_item) -> None:
         label = Gtk.Label(xalign=0)
-        label.set_ellipsize(Pango.EllipsizeMode.END)
+        make_shrinking_label(label, 18)
         list_item.set_child(label)
 
     def bind(_factory, list_item) -> None:

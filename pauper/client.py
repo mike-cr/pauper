@@ -16,6 +16,7 @@ from .protocol import connect_socket, recv_json_line, send_json
 from .voices import Voice
 from .voices import download_voice as download_voice_file
 from .voices import find_installed_voice, list_installed, load_catalog
+from .voices import speaker_count_for_voice_id
 
 
 def request(payload: dict[str, Any], socket: Path, timeout: float = 5.0) -> tuple[dict[str, Any], bytes]:
@@ -177,9 +178,12 @@ def format_status(status: dict[str, Any]) -> str:
 def format_voice(voice: Any, speaker: Any = None) -> str:
     if not voice:
         return "none"
-    if speaker is None:
-        return str(voice)
-    return f"{voice} (speaker {speaker})"
+    voice_id = str(voice)
+    if not isinstance(speaker, int):
+        return voice_id
+    if speaker_count_for_voice_id(voice_id) == 1:
+        return voice_id
+    return f"{voice_id} (speaker {speaker})"
 
 
 def format_retention(value: Any) -> str:

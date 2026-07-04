@@ -30,7 +30,10 @@ class AppConfig:
 def load_config(path: Path | None = None) -> AppConfig:
     cfg_path = path or config_path()
     if not cfg_path.exists():
-        return AppConfig()
+        config = AppConfig()
+        if path is None:
+            save_config(config, cfg_path)
+        return config
 
     raw = load_toml_config(cfg_path)
     return config_from_mapping(raw)

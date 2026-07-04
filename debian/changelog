@@ -1,6 +1,24 @@
+pauper (0.1.1) unstable; urgency=medium
+
+  * Improve phone-sized GTK layout by reducing window width requirements,
+    left-aligning the main title, stacking card actions, tightening settings
+    controls, and moving status/retry messages to the bottom of the screen.
+  * Restore labelled voice action buttons and keep the unload action below the
+    current memory status with a clearer icon.
+  * Hide speaker details in status text for single-speaker voices.
+  * Create the default TOML configuration file on first run when it is missing.
+  * Prefer system ONNX Runtime over Pauper's private Piper target path to avoid
+    duplicate ONNX schema registration errors.
+  * Remove stale private onnx and onnxruntime installs during package
+    configuration.
+  * Format CLI voice status without redundant speaker details for
+    single-speaker voices.
+  * Update AppStream release metadata for 0.1.1.
+
+ -- pauper contributors <noreply@example.invalid>  Sat, 04 Jul 2026 04:15:00 +1200
+
 pauper (0.1.0) unstable; urgency=medium
 
   * Initial package.
 
  -- pauper contributors <noreply@example.invalid>  Sat, 04 Jul 2026 03:30:00 +1200
-

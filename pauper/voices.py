@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib import resources
 import json
 from pathlib import Path
@@ -127,6 +128,15 @@ def list_installed(base_dir: Path | None = None) -> list[Voice]:
             )
 
     return voices
+
+
+@lru_cache(maxsize=None)
+def speaker_count_for_voice_id(voice_id: str) -> int | None:
+    for voice in load_catalog():
+        if voice.id != voice_id:
+            continue
+        return voice.num_speakers or len(voice.speaker_id_map or {}) or 1
+    return None
 
 
 def load_catalog(path: Path | None = None) -> list[Voice]:

@@ -16,7 +16,10 @@ from .paths import private_python_dir
 
 PRIVATE_PYTHON = private_python_dir()
 if PRIVATE_PYTHON.exists():
-    sys.path.insert(0, str(PRIVATE_PYTHON))
+    # Keep apt-provided modules ahead of Pauper's private Piper target. Stale
+    # pip-installed onnx/onnxruntime copies in the private directory can clash
+    # with the system ONNX Runtime native extension.
+    sys.path.append(str(PRIVATE_PYTHON))
 
 from piper import PiperVoice, SynthesisConfig
 from piper.voice import ESPEAK_DATA_DIR, PiperConfig

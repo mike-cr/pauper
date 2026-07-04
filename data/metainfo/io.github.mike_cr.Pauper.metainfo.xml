@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.1" date="2026-07-04">
+      <description>
+        <p>Update mobile UI layout and package metadata.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-07-04">
       <description>
         <p>Initial Pauper release.</p>

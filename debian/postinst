@@ -7,6 +7,12 @@ fi
 
 PRIVATE_PYTHON=/usr/lib/pauper/python
 mkdir -p "$PRIVATE_PYTHON"
+find "$PRIVATE_PYTHON" -maxdepth 1 \( \
+    -name 'onnx' -o \
+    -name 'onnx-*.dist-info' -o \
+    -name 'onnxruntime' -o \
+    -name 'onnxruntime-*.dist-info' \
+    \) -exec rm -rf {} +
 
 if ! PYTHONPATH="$PRIVATE_PYTHON${PYTHONPATH:+:$PYTHONPATH}" python3 -c 'import piper; import pathvalidate' >/dev/null 2>&1; then
     python3 -m pip install --target "$PRIVATE_PYTHON" --no-cache-dir --no-deps --upgrade piper-tts pathvalidate
