@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
+import importlib
 import importlib.abc
 import json
 import logging
@@ -12,8 +14,37 @@ import sys
 import threading
 from typing import Any
 
-import onnxruntime
 from .paths import private_python_dir
+
+
+NATIVE_ONNX_STDERR_FILTERS = (
+    b"GPU device discovery failed:",
+    b"Schema error: Trying to register schema",
+)
+
+
+@contextmanager
+def filter_native_onnx_noise():
+    saved_stderr = os.dup(2)
+    read_fd, write_fd = os.pipe()
+
+    def forward_stderr() -> None:
+        with os.fdopen(read_fd, "rb", closefd=True) as reader:
+            for line in reader:
+                if any(fragment in line for fragment in NATIVE_ONNX_STDERR_FILTERS):
+                    continue
+                os.write(saved_stderr, line)
+
+    thread = threading.Thread(target=forward_stderr, daemon=True)
+    thread.start()
+    os.dup2(write_fd, 2)
+    os.close(write_fd)
+    try:
+        yield
+    finally:
+        os.dup2(saved_stderr, 2)
+        thread.join(timeout=1)
+        os.close(saved_stderr)
 
 
 class BlockOnnxPackage(importlib.abc.MetaPathFinder):
@@ -26,6 +57,9 @@ class BlockOnnxPackage(importlib.abc.MetaPathFinder):
 
 
 sys.meta_path.insert(0, BlockOnnxPackage())
+
+with filter_native_onnx_noise():
+    onnxruntime = importlib.import_module("onnxruntime")
 
 PRIVATE_PYTHON = private_python_dir()
 if PRIVATE_PYTHON.exists():
@@ -309,6 +343,7 @@ class PiperState:
         if not text:
             raise ValueError("text is empty")
 
+        LOG.info("synthesizing %d characters", len(text))
         voice = self.voice if self.loaded_voice_matches_synthesis_target() else self.load_synthesis_target()
         cfg = self._synthesis_config(overrides or {})
 
@@ -326,6 +361,7 @@ class PiperState:
             sample_width=chunks[0].sample_width,
             channels=chunks[0].sample_channels,
         )
+        LOG.info("synthesized %d bytes with voice %s", len(wav), self.loaded_voice_id or "<unknown>")
 
         return {
             "audio": wav,
@@ -517,11 +553,21 @@ class PiperRequestHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         try:
             request = recv_json_line(self.rfile)
+            action = request.get("action")
+            action_label = action if isinstance(action, str) else "<missing>"
+            if action_label == "status":
+                LOG.debug("request action=%s", action_label)
+            else:
+                LOG.info("request action=%s", action_label)
             response = self.dispatch(request)
             audio = response.pop("audio", None)
             send_json(self.request, {"ok": True, **response, "bytes": len(audio) if audio else 0})
             if audio:
                 self.request.sendall(audio)
+            if action_label == "status":
+                LOG.debug("request action=%s completed bytes=%d", action_label, len(audio) if audio else 0)
+            else:
+                LOG.info("request action=%s completed bytes=%d", action_label, len(audio) if audio else 0)
         except (BrokenPipeError, ConnectionResetError):
             LOG.debug("client disconnected before response was sent")
             return
@@ -731,7 +777,9 @@ def validate_execution_provider(provider: str) -> None:
 
 def provider_chain(provider: str) -> list[str]:
     validate_execution_provider(provider)
-    return [provider]
+    if provider == "CPUExecutionProvider":
+        return [provider]
+    return [provider, "CPUExecutionProvider"]
 
 
 def load_piper_voice(model_path: Path, config_path: Path, execution_provider: str) -> PiperVoice:
@@ -742,14 +790,19 @@ def load_piper_voice(model_path: Path, config_path: Path, execution_provider: st
 
     return PiperVoice(
         config=PiperConfig.from_dict(config_dict),
-        session=onnxruntime.InferenceSession(
-            str(model_path),
-            sess_options=onnxruntime.SessionOptions(),
-            providers=providers,
-        ),
+        session=create_inference_session(model_path, providers),
         espeak_data_dir=Path(ESPEAK_DATA_DIR),
         download_dir=Path.cwd(),
     )
+
+
+def create_inference_session(model_path: Path, providers: list[str]) -> onnxruntime.InferenceSession:
+    with filter_native_onnx_noise():
+        return onnxruntime.InferenceSession(
+            str(model_path),
+            sess_options=onnxruntime.SessionOptions(),
+            providers=providers,
+        )
 
 
 if __name__ == "__main__":

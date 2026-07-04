@@ -19,6 +19,10 @@ from .voices import find_installed_voice, list_installed, load_catalog
 from .voices import speaker_count_for_voice_id
 
 
+SYNTHESIS_TIMEOUT = 120.0
+PLAYBACK_TIMEOUT = 30.0
+
+
 def request(payload: dict[str, Any], socket: Path, timeout: float = 5.0) -> tuple[dict[str, Any], bytes]:
     with connect_socket(socket, timeout=timeout) as sock:
         send_json(sock, payload)
@@ -129,14 +133,21 @@ def cmd_speak(args: argparse.Namespace) -> int:
         "noise_w_scale": args.noise_w_scale,
         "volume": args.volume,
     }
+    if args.verbose:
+        print("Requesting synthesis from pauperd...", file=sys.stderr)
     header, audio = request(
         {"action": "synthesize", "text": text, "synthesis": synthesis},
         args.socket,
+        timeout=SYNTHESIS_TIMEOUT,
     )
+    if args.verbose:
+        print(f"Received {len(audio)} bytes of WAV audio.", file=sys.stderr)
 
     if args.output:
         args.output.write_bytes(audio)
     elif args.play:
+        if args.verbose:
+            print("Playing WAV audio...", file=sys.stderr)
         play_wav(audio)
     else:
         sys.stdout.buffer.write(audio)
@@ -305,21 +316,25 @@ def voice_payload(action: str, args: argparse.Namespace) -> dict[str, Any]:
 def play_wav(audio: bytes, output: str | None = None) -> None:
     output = output if output is not None else load_config().audio_output
     if output:
-        player = shutil.which("pw-play")
-        if not player:
-            raise RuntimeError("selected audio output requires pw-play from pipewire-bin")
-        subprocess.run([player, "--target", output, "-"], input=audio, check=True)
-        return
+        if shutil.which("paplay"):
+            subprocess.run(["paplay", "--device", output], input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
+            return
+        if shutil.which("pw-play"):
+            subprocess.run(["pw-play", "--target", output, "-"], input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
+            return
+        raise RuntimeError("selected audio output requires paplay or pw-play")
 
-    player = shutil.which("pw-play") or shutil.which("paplay") or shutil.which("aplay")
-    if not player:
-        raise RuntimeError("no audio player found; install pipewire-bin, pulseaudio-utils, or alsa-utils")
+    players = [
+        ("paplay", ["paplay"]),
+        ("aplay", ["aplay", "-q", "-"]),
+        ("pw-play", ["pw-play", "-"]),
+    ]
+    for executable, command in players:
+        if shutil.which(executable):
+            subprocess.run(command, input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
+            return
 
-    command = [player, "-"]
-    if Path(player).name == "aplay":
-        command = [player, "-q", "-"]
-
-    subprocess.run(command, input=audio, check=True)
+    raise RuntimeError("no audio player found; install pulseaudio-utils, alsa-utils, or pipewire-bin")
 
 
 def play_audio_file(path: Path) -> None:
@@ -327,8 +342,8 @@ def play_audio_file(path: Path) -> None:
         ("gst-play-1.0", ["gst-play-1.0", "--no-interactive", str(path)]),
         ("mpv", ["mpv", "--really-quiet", str(path)]),
         ("ffplay", ["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", str(path)]),
-        ("pw-play", ["pw-play", str(path)]),
         ("paplay", ["paplay", str(path)]),
+        ("pw-play", ["pw-play", str(path)]),
     ]
     for executable, command in players:
         if shutil.which(executable):

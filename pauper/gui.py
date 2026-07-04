@@ -1880,16 +1880,18 @@ def pactl_sink_descriptions() -> dict[str, str]:
 
 def audio_player_command(path: Path, output: str | None = None) -> list[str]:
     if output:
-        if not shutil.which("pw-play"):
-            raise RuntimeError("selected audio output requires pw-play from pipewire-bin")
-        return ["pw-play", "--target", output, str(path)]
+        if shutil.which("paplay"):
+            return ["paplay", "--device", output, str(path)]
+        if shutil.which("pw-play"):
+            return ["pw-play", "--target", output, str(path)]
+        raise RuntimeError("selected audio output requires paplay or pw-play")
 
     players = [
         ("gst-play-1.0", ["gst-play-1.0", "--no-interactive", str(path)]),
         ("mpv", ["mpv", "--really-quiet", str(path)]),
         ("ffplay", ["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", str(path)]),
-        ("pw-play", ["pw-play", str(path)]),
         ("paplay", ["paplay", str(path)]),
+        ("pw-play", ["pw-play", str(path)]),
     ]
     for executable, command in players:
         if shutil.which(executable):

@@ -1,8 +1,18 @@
+pauper (0.1.3) unstable; urgency=medium
+
+  * Improve ONNX Runtime reliability on phone hardware by filtering noisy
+    native ONNX Runtime warnings, adding daemon request and synthesis
+    diagnostics, logging non-status request lifecycle events, extending CLI
+    synthesis timeouts, preferring paplay over pw-play for playback, avoiding
+    pw-play stdin playback for generated WAV audio, limiting playback hangs,
+    and using CPU fallback for non-CPU execution providers.
+
+ -- pauper contributors <noreply@example.invalid>  Sat, 04 Jul 2026 23:45:00 +1200
+
 pauper (0.1.2) unstable; urgency=medium
 
   * Prevent pauperd from importing the separate Python onnx package after
-    ONNX Runtime is loaded, avoiding duplicate ONNX schema registration log
-    messages during voice loading.
+    ONNX Runtime is loaded.
   * Remove stale private onnx and onnxruntime files more broadly from
     /usr/lib/pauper/python during package configuration.
 
