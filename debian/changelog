@@ -1,4 +1,4 @@
-pauper (0.1.4) unstable; urgency=medium
+pauper (0.1.5) unstable; urgency=medium
 
   * Read daemon responses without leaking raw EAGAIN socket errors by replacing
     timeout-socket makefile reads with explicit select/recv handling.
@@ -11,7 +11,7 @@ pauper (0.1.4) unstable; urgency=medium
     fails with a transient resource or timeout error, preferring paplay before
     pw-play.
 
- -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 00:20:00 +1200
+ -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 00:35:00 +1200
 
 pauper (0.1.3) unstable; urgency=medium
 
