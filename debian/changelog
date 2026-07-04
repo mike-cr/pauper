@@ -2,9 +2,14 @@ pauper (0.1.4) unstable; urgency=medium
 
   * Read daemon responses without leaking raw EAGAIN socket errors by replacing
     timeout-socket makefile reads with explicit select/recv handling.
+  * Connect to the daemon socket in blocking mode before applying operation
+    timeouts and add request-phase context to socket errors.
   * Preserve any audio bytes received with the response header before reading
     the remainder of the WAV payload.
   * Report daemon response timeouts consistently in the GTK manager.
+  * Fall through to the next available audio player when a playback backend
+    fails with a transient resource or timeout error, preferring paplay before
+    pw-play.
 
  -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 00:20:00 +1200
 

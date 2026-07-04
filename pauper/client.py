@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
+import traceback
 from typing import Any
 
 from . import __version__
@@ -24,10 +26,28 @@ PLAYBACK_TIMEOUT = 30.0
 
 
 def request(payload: dict[str, Any], socket: Path, timeout: float = 5.0) -> tuple[dict[str, Any], bytes]:
-    with connect_socket(socket, timeout=timeout) as sock:
-        send_json(sock, payload)
+    action = str(payload.get("action") or "request")
+    try:
+        sock = connect_socket(socket, timeout=timeout)
+    except BlockingIOError as exc:
+        raise RuntimeError(f"could not connect to pauperd for {action}: resource temporarily unavailable") from exc
+    except OSError as exc:
+        raise RuntimeError(f"could not connect to pauperd for {action}: {exc}") from exc
+
+    with sock:
+        try:
+            send_json(sock, payload)
+        except BlockingIOError as exc:
+            raise RuntimeError(f"could not send {action} request to pauperd: resource temporarily unavailable") from exc
+        except OSError as exc:
+            raise RuntimeError(f"could not send {action} request to pauperd: {exc}") from exc
         sock.setblocking(False)
-        header, body_start = recv_json_line_socket(sock, timeout)
+        try:
+            header, body_start = recv_json_line_socket(sock, timeout)
+        except BlockingIOError as exc:
+            raise RuntimeError(f"pauperd response for {action} was temporarily unavailable") from exc
+        except TimeoutError as exc:
+            raise RuntimeError(f"timed out waiting for pauperd response to {action}") from exc
         if not header.get("ok"):
             raise RuntimeError(str(header.get("error", "request failed")))
 
@@ -35,7 +55,12 @@ def request(payload: dict[str, Any], socket: Path, timeout: float = 5.0) -> tupl
         if size:
             body = body_start[:size]
             if len(body) < size:
-                body += recv_exactly(sock, size - len(body), timeout)
+                try:
+                    body += recv_exactly(sock, size - len(body), timeout)
+                except BlockingIOError as exc:
+                    raise RuntimeError(f"pauperd audio for {action} was temporarily unavailable") from exc
+                except TimeoutError as exc:
+                    raise RuntimeError(f"timed out reading pauperd audio for {action}") from exc
         else:
             body = b""
         if len(body) != size:
@@ -321,12 +346,15 @@ def voice_payload(action: str, args: argparse.Namespace) -> dict[str, Any]:
 def play_wav(audio: bytes, output: str | None = None) -> None:
     output = output if output is not None else load_config().audio_output
     if output:
+        failures = []
         if shutil.which("paplay"):
-            subprocess.run(["paplay", "--device", output], input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
-            return
+            if run_audio_player(["paplay", "--device", output], audio, failures):
+                return
         if shutil.which("pw-play"):
-            subprocess.run(["pw-play", "--target", output, "-"], input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
-            return
+            if run_audio_player(["pw-play", "--target", output, "-"], audio, failures):
+                return
+        if failures:
+            raise RuntimeError("audio playback failed: " + "; ".join(failures))
         raise RuntimeError("selected audio output requires paplay or pw-play")
 
     players = [
@@ -334,12 +362,39 @@ def play_wav(audio: bytes, output: str | None = None) -> None:
         ("aplay", ["aplay", "-q", "-"]),
         ("pw-play", ["pw-play", "-"]),
     ]
+    failures = []
     for executable, command in players:
         if shutil.which(executable):
-            subprocess.run(command, input=audio, check=True, timeout=PLAYBACK_TIMEOUT)
-            return
+            if run_audio_player(command, audio, failures):
+                return
 
+    if failures:
+        raise RuntimeError("audio playback failed: " + "; ".join(failures))
     raise RuntimeError("no audio player found; install pulseaudio-utils, alsa-utils, or pipewire-bin")
+
+
+def run_audio_player(command: list[str], audio: bytes, failures: list[str]) -> bool:
+    try:
+        subprocess.run(
+            command,
+            input=audio,
+            check=True,
+            timeout=PLAYBACK_TIMEOUT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        return True
+    except subprocess.TimeoutExpired:
+        failures.append(f"{command[0]} timed out")
+    except subprocess.CalledProcessError as exc:
+        message = exc.stderr.decode("utf-8", errors="replace").strip() if exc.stderr else ""
+        failures.append(f"{command[0]} exited {exc.returncode}{': ' + message if message else ''}")
+    except OSError as exc:
+        if exc.errno in {errno.EAGAIN, errno.EWOULDBLOCK}:
+            failures.append(f"{command[0]} resource temporarily unavailable")
+        else:
+            failures.append(f"{command[0]} failed: {exc}")
+    return False
 
 
 def play_audio_file(path: Path) -> None:
@@ -434,6 +489,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return int(args.func(args))
     except Exception as exc:
+        if os.environ.get("PAUPER_TRACEBACK"):
+            traceback.print_exc(file=sys.stderr)
         print(f"pauper: {exc}", file=sys.stderr)
         return 1
 

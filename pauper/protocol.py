@@ -90,6 +90,10 @@ def recv_available(sock: socket.socket, deadline: float, size: int) -> bytes:
 
 def connect_socket(path: Path, timeout: float = 5.0) -> socket.socket:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    sock.connect(str(path))
-    return sock
+    try:
+        sock.connect(str(path))
+        sock.settimeout(timeout)
+        return sock
+    except Exception:
+        sock.close()
+        raise
