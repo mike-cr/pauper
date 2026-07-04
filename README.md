@@ -17,6 +17,16 @@ The project includes:
 - Debian packaging metadata for installing the service, desktop launcher,
   AppStream metadata, and Speech Dispatcher module config.
 
+## Add The Repository
+
+On FuriOS/forky systems, add the package repository with:
+
+```sh
+curl -fsSL https://pub.furiphone.repo.lmao.wang/mikes-furiphone-repo.asc | sudo gpg --dearmor -o /usr/share/keyrings/mikes-furiphone-repo.gpg
+echo 'deb [signed-by=/usr/share/keyrings/mikes-furiphone-repo.gpg] https://pub.furiphone.repo.lmao.wang forky main' | sudo tee /etc/apt/sources.list.d/mikes-furiphone-repo.list
+sudo apt update
+```
+
 ## What It Does
 
 Pauper can:
