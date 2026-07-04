@@ -1,3 +1,12 @@
+pauper (0.1.8) unstable; urgency=medium
+
+  * Preserve the GTK voice list scroll position when a model download
+    completes and the cards are rebuilt.
+  * Declare a placeholder voice and default voice in the Speech Dispatcher
+    generic module config so sd_generic can initialise the Pauper module.
+
+ -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 01:10:00 +1200
+
 pauper (0.1.7) unstable; urgency=medium
 
   * Submit the GTK test speech entry when Enter is pressed.

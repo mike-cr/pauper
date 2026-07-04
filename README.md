@@ -157,6 +157,10 @@ It runs synthesis through:
 /usr/bin/pauper-cli speak --play
 ```
 
+The module config declares a placeholder Speech Dispatcher voice named
+`pauper` so `sd_generic` can initialise. The actual Piper model is still chosen
+by Pauper's own default/synthesis settings.
+
 The package does not edit per-user Speech Dispatcher configuration. To enable
 Pauper for your user, copy or merge the example into:
 

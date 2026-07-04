@@ -66,6 +66,7 @@ class ManagerWindow(Adw.ApplicationWindow):
         self.updating_settings = False
         self.refresh_generation = 0
         self.status_poll_source_id: int | None = None
+        self.preserve_voice_scroll_updates = 0
         self.ensure_loaded_on_connect = True
         self.retention_values: list[int | None] = [0, 60, 300, 900, 3600, None]
         self.retention_labels: list[str] = [
@@ -703,6 +704,11 @@ class ManagerWindow(Adw.ApplicationWindow):
         if self.updating_filters:
             return
 
+        restore_scroll = self.preserve_voice_scroll_updates > 0
+        scroll_value = self.voices_scroller.get_vadjustment().get_value() if restore_scroll else 0.0
+        if restore_scroll:
+            self.preserve_voice_scroll_updates -= 1
+
         self.sample_buttons.clear()
         self.sample_dropdowns.clear()
         while row := self.listbox.get_row_at_index(0):
@@ -726,12 +732,27 @@ class ManagerWindow(Adw.ApplicationWindow):
 
         if not grouped:
             self.listbox.append(self.empty_row())
+            if restore_scroll:
+                GLib.idle_add(self.restore_voice_scroll, scroll_value)
             return
 
         for language in sorted(grouped):
             self.listbox.append(self.heading_row(language, len(grouped[language])))
             for voice in grouped[language]:
                 self.listbox.append(self.voice_row(voice))
+
+        if restore_scroll:
+            GLib.idle_add(self.restore_voice_scroll, scroll_value)
+
+    def preserve_voice_scroll_for_next_updates(self, count: int = 1) -> None:
+        self.preserve_voice_scroll_updates = max(self.preserve_voice_scroll_updates, count)
+
+    def restore_voice_scroll(self, value: float) -> bool:
+        adjustment = self.voices_scroller.get_vadjustment()
+        lower = adjustment.get_lower()
+        upper = max(lower, adjustment.get_upper() - adjustment.get_page_size())
+        adjustment.set_value(min(max(value, lower), upper))
+        return GLib.SOURCE_REMOVE
 
     def selected_language(self) -> str:
         selected = self.language_dropdown.get_selected()
@@ -1284,6 +1305,7 @@ class ManagerWindow(Adw.ApplicationWindow):
     def mark_voice_downloaded(self, downloaded: dict[str, Any]) -> bool:
         voice_id = downloaded.get("id")
         if isinstance(voice_id, str):
+            self.preserve_voice_scroll_for_next_updates(2)
             for voice in self.voices:
                 if voice.get("id") == voice_id:
                     voice.update(downloaded)
