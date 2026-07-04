@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.11" date="2026-07-05">
+      <description>
+        <p>Distinguish explicit synthesis selection from default voice fallback in the GTK manager.</p>
+      </description>
+    </release>
     <release version="0.1.10" date="2026-07-05">
       <description>
         <p>Update AppStream screenshots with current FuriPhone captures.</p>

@@ -78,6 +78,7 @@ class PiperState:
             "configured_speaker": self.config.speaker,
             "configured_model_path": self.config.model_path,
             "configured_config_path": self.config.config_path,
+            "synthesis_explicit": self.has_explicit_synthesis_target(),
             "synthesis_voice": synthesis["voice"],
             "synthesis_speaker": synthesis["speaker"],
             "synthesis_model_path": synthesis["model_path"],
@@ -391,7 +392,7 @@ class PiperState:
         LOG.info("unloading voice %s from memory: %s", self.loaded_voice_id or "<unknown>", reason)
 
     def synthesis_target(self) -> dict[str, Any]:
-        if self.synthesis_voice_id and self.synthesis_model_path and self.synthesis_config_path:
+        if self.has_explicit_synthesis_target():
             return {
                 "voice": self.synthesis_voice_id,
                 "speaker": self.synthesis_speaker_id,
@@ -425,7 +426,7 @@ class PiperState:
         return self._loaded_voice_matches(self.config.voice, model_path, config_path)
 
     def synthesis_target_without_memory(self) -> dict[str, Any]:
-        if self.synthesis_voice_id and self.synthesis_model_path and self.synthesis_config_path:
+        if self.has_explicit_synthesis_target():
             return {
                 "voice": self.synthesis_voice_id,
                 "speaker": self.synthesis_speaker_id,
@@ -438,6 +439,9 @@ class PiperState:
             "model_path": self.config.model_path,
             "config_path": self.config.config_path,
         }
+
+    def has_explicit_synthesis_target(self) -> bool:
+        return bool(self.synthesis_voice_id and self.synthesis_model_path and self.synthesis_config_path)
 
     def _validate_voice_paths(self, model_path: Path, config_path: Path) -> None:
         missing = self.missing_voice_files(model_path, config_path)

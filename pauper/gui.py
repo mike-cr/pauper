@@ -1028,6 +1028,9 @@ class ManagerWindow(Adw.ApplicationWindow):
         return " / ".join(states)
 
     def voice_matches_status(self, voice: dict[str, Any], prefix: str) -> bool:
+        if prefix == "synthesis" and self.status.get("synthesis_explicit") is False:
+            return False
+
         voice_id = voice.get("id")
         status_voice = self.status.get(f"{prefix}_voice")
         if isinstance(voice_id, str) and voice_id and voice_id == status_voice:
@@ -1488,6 +1491,7 @@ def offline_state(voices: list[dict[str, Any]] | None = None) -> tuple[dict[str,
             "configured_speaker": config.speaker,
             "configured_model_path": config.model_path,
             "configured_config_path": config.config_path,
+            "synthesis_explicit": False,
             "synthesis_voice": config.voice,
             "synthesis_speaker": config.speaker,
             "synthesis_model_path": config.model_path,
@@ -1614,6 +1618,9 @@ def forget_local_default_if_matches(voice: dict[str, Any]) -> None:
 
 
 def status_like_voice_matches(status: dict[str, Any], voice: dict[str, Any], prefix: str) -> bool:
+    if prefix == "synthesis" and status.get("synthesis_explicit") is False:
+        return False
+
     voice_id = voice.get("id")
     status_voice = status.get(f"{prefix}_voice")
     if isinstance(voice_id, str) and voice_id and voice_id == status_voice:
