@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from contextlib import contextmanager
-import importlib
 import importlib.abc
 import json
 import logging
@@ -17,36 +15,6 @@ from typing import Any
 from .paths import private_python_dir
 
 
-NATIVE_ONNX_STDERR_FILTERS = (
-    b"GPU device discovery failed:",
-    b"Schema error: Trying to register schema",
-)
-
-
-@contextmanager
-def filter_native_onnx_noise():
-    saved_stderr = os.dup(2)
-    read_fd, write_fd = os.pipe()
-
-    def forward_stderr() -> None:
-        with os.fdopen(read_fd, "rb", closefd=True) as reader:
-            for line in reader:
-                if any(fragment in line for fragment in NATIVE_ONNX_STDERR_FILTERS):
-                    continue
-                os.write(saved_stderr, line)
-
-    thread = threading.Thread(target=forward_stderr, daemon=True)
-    thread.start()
-    os.dup2(write_fd, 2)
-    os.close(write_fd)
-    try:
-        yield
-    finally:
-        os.dup2(saved_stderr, 2)
-        thread.join(timeout=1)
-        os.close(saved_stderr)
-
-
 class BlockOnnxPackage(importlib.abc.MetaPathFinder):
     """Prevent the separate onnx package from sharing this process with ORT."""
 
@@ -58,8 +26,7 @@ class BlockOnnxPackage(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, BlockOnnxPackage())
 
-with filter_native_onnx_noise():
-    onnxruntime = importlib.import_module("onnxruntime")
+import onnxruntime
 
 PRIVATE_PYTHON = private_python_dir()
 if PRIVATE_PYTHON.exists():
@@ -797,12 +764,11 @@ def load_piper_voice(model_path: Path, config_path: Path, execution_provider: st
 
 
 def create_inference_session(model_path: Path, providers: list[str]) -> onnxruntime.InferenceSession:
-    with filter_native_onnx_noise():
-        return onnxruntime.InferenceSession(
-            str(model_path),
-            sess_options=onnxruntime.SessionOptions(),
-            providers=providers,
-        )
+    return onnxruntime.InferenceSession(
+        str(model_path),
+        sess_options=onnxruntime.SessionOptions(),
+        providers=providers,
+    )
 
 
 if __name__ == "__main__":

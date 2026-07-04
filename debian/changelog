@@ -1,3 +1,11 @@
+pauper (0.1.6) unstable; urgency=medium
+
+  * Stop redirecting native ONNX Runtime stderr while creating inference
+    sessions, since the filter could block model loading before the daemon sent
+    a synthesis response.
+
+ -- pauper contributors <noreply@example.invalid>  Sun, 05 Jul 2026 00:45:00 +1200
+
 pauper (0.1.5) unstable; urgency=medium
 
   * Read daemon responses without leaking raw EAGAIN socket errors by replacing
