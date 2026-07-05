@@ -8,6 +8,7 @@ __pycache__/
 *$py.class
 *.egg-info/
 .eggs/
+/pauper/_version.py
 
 # Python build outputs
 build/

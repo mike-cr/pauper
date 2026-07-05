@@ -1,3 +1,10 @@
+pauper (0.2.3) unstable; urgency=medium
+
+  * Generate the application version reported by the GTK about page and
+    pauper-cli version from the Debian changelog version at build time.
+
+ -- pauper contributors <noreply@example.invalid>  Mon, 06 Jul 2026 06:30:12 +1200
+
 pauper (0.2.2) unstable; urgency=medium
 
   * Fix AppStream screenshot URLs to use the repository's master branch.

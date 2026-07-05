@@ -1,3 +1,6 @@
 """Pauper resident TTS service."""
 
-__version__ = "0.2.2"
+try:
+    from ._version import __version__
+except ModuleNotFoundError:
+    __version__ = "0+unknown"

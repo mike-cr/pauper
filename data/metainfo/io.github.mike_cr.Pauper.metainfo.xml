@@ -42,6 +42,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.3" date="2026-07-06">
+      <description>
+        <p>Generate the displayed application version from the Debian package version.</p>
+      </description>
+    </release>
     <release version="0.2.2" date="2026-07-06">
       <description>
         <p>Fix screenshot links in the application metadata.</p>
