@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v apt >/dev/null 2>&1; then
+    echo "This script must run inside the FuriOS build container." >&2
+    exit 1
+fi
+
+suite="${FURIOS_SUITE:-forky}"
+repo_url="${PAUPER_APT_REPO_URL:-https://pub.furiphone.repo.lmao.wang}"
+key_url="${PAUPER_APT_REPO_KEY_URL:-${repo_url%/}/mikes-furiphone-repo.asc}"
+keyring="/usr/share/keyrings/mikes-furiphone-repo.gpg"
+source="/etc/apt/sources.list.d/mikes-furiphone-repo.list"
+
+apt install -y ca-certificates curl gnupg
+
+install -d -m 0755 "$(dirname "${keyring}")" "$(dirname "${source}")"
+tmp_key="$(mktemp)"
+trap 'rm -f "${tmp_key}"' EXIT
+curl -fsSL "${key_url}" -o "${tmp_key}"
+gpg --dearmor --yes -o "${keyring}" "${tmp_key}"
+chmod 0644 "${keyring}"
+
+if [[ -n "${FURIOS_APT_CACHE:-}" && "${repo_url}" == https://* ]]; then
+    apt_repo="${FURIOS_APT_CACHE%/}/HTTPS///${repo_url#https://}"
+else
+    apt_repo="${repo_url}"
+fi
+
+cat >"${source}" <<EOF
+deb [signed-by=${keyring}] ${apt_repo%/} ${suite} main
+EOF
+
+apt update

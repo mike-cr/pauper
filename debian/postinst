@@ -5,16 +5,7 @@ if command -v systemctl >/dev/null 2>&1; then
     systemctl --global enable pauper.service >/dev/null 2>&1 || true
 fi
 
-PRIVATE_PYTHON=/usr/lib/pauper/python
-mkdir -p "$PRIVATE_PYTHON"
-find "$PRIVATE_PYTHON" -maxdepth 1 \( \
-    -name 'onnx*' -o \
-    -name 'onnxruntime*' \
-    \) -exec rm -rf {} +
-
-if ! PYTHONPATH="$PRIVATE_PYTHON${PYTHONPATH:+:$PYTHONPATH}" python3 -c 'import piper; import pathvalidate' >/dev/null 2>&1; then
-    python3 -m pip install --target "$PRIVATE_PYTHON" --root-user-action=ignore --no-cache-dir --no-deps --upgrade piper-tts pathvalidate
-fi
+rm -rf /usr/lib/pauper/python
 
 # The package installs the Speech Dispatcher module file and an example
 # speechd.conf snippet, but does not edit per-user Speech Dispatcher configs.

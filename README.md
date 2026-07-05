@@ -53,19 +53,17 @@ On Debian-style systems, Pauper expects these system packages:
 - `ca-certificates`
 - `gir1.2-adw-1`
 - `gir1.2-gtk-4.0`
+- `piper-tts`
 - `pipewire-bin`
 - `pulseaudio-utils`
 - `python3`
 - `python3-gi`
 - `python3-numpy`
 - `python3-onnxruntime`
-- `python3-pip`
 - `speech-dispatcher`
 
-The Debian package installs Piper's Python package privately under
-`/usr/lib/pauper/python` if it is not already present there. ONNX Runtime is kept
-as the system package so the daemon uses the execution providers supplied by the
-distribution.
+The Debian package uses the distribution's `piper-tts` and ONNX Runtime packages
+so the daemon uses the execution providers supplied by the distribution.
 
 ## Installed Commands
 
@@ -254,7 +252,6 @@ The package installs these main files:
 /usr/bin/pauper-cli
 /usr/bin/pauperd
 /usr/bin/pauper-gtk
-/usr/lib/pauper/python/
 /usr/lib/systemd/user/pauper.service
 /usr/lib/speech-dispatcher-modules/pauper
 /etc/speech-dispatcher/modules/pauper-generic.conf
@@ -262,10 +259,6 @@ The package installs these main files:
 /usr/share/icons/hicolor/scalable/apps/io.github.mike_cr.Pauper.svg
 /usr/share/metainfo/io.github.mike_cr.Pauper.metainfo.xml
 ```
-
-`/usr/lib/pauper/python/` is the private Python target used for PyPI packages
-that are not expected to come from apt, currently including Piper. It is removed
-when the Debian package is removed or purged.
 
 ## Development From The Tree
 

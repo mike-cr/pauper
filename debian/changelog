@@ -1,3 +1,12 @@
+pauper (0.2) unstable; urgency=medium
+
+  * Depend on the packaged piper-tts instead of installing Piper privately
+    with pip during package configuration.
+  * Remove stale private Piper installs from /usr/lib/pauper/python on upgrade.
+  * Limit the Debian package to arm64.
+
+ -- pauper contributors <noreply@example.invalid>  Mon, 06 Jul 2026 02:43:42 +1200
+
 pauper (0.1.11) unstable; urgency=medium
 
   * Distinguish an explicit synthesis voice from the daemon's default voice

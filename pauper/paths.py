@@ -49,7 +49,3 @@ def socket_dir() -> Path:
 
 def socket_path() -> Path:
     return socket_dir() / "socket"
-
-
-def private_python_dir() -> Path:
-    return Path(os.environ.get("PAUPER_PRIVATE_PYTHON", "/usr/lib/pauper/python"))

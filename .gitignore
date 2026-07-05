@@ -35,6 +35,9 @@ htmlcov/
 /debian/*.debhelper
 /debian/*.substvars
 /debian/pauper/
+/debian/pauper-dbgsym/
+/debian/tmp/
+/build-artifacts/
 /*.build
 /*.buildinfo
 /*.changes

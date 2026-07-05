@@ -12,20 +12,20 @@ Standards-Version: 4.7.0
 Rules-Requires-Root: no
 
 Package: pauper
-Architecture: all
+Architecture: arm64
 Depends:
  ${misc:Depends},
  ${python3:Depends},
  ca-certificates,
  gir1.2-adw-1,
  gir1.2-gtk-4.0,
+ piper-tts,
  pipewire-bin,
  pulseaudio-utils,
  python3:any (>= 3.11),
  python3-gi,
  python3-numpy,
  python3-onnxruntime,
- python3-pip,
  speech-dispatcher,
 Description: Pauper resident TTS service for Speech Dispatcher
  Pauper keeps a Piper voice loaded in a user service and accepts short

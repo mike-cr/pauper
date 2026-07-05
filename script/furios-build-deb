@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+binary_only=0
+clean=1
+run_lintian=1
+force_orig=0
+artifact_dir="${FURIOS_ARTIFACT_DIR:-build-artifacts}"
+
+usage() {
+    cat <<'EOF'
+Usage: script/furios-build-deb [options]
+
+Build the FuriOS Debian package from inside the FuriOS build container.
+
+Options:
+  -b, --binary-only   Run dpkg-buildpackage -b for a quick binary-only build
+      --no-clean      Skip fakeroot debian/rules clean before building
+      --no-lintian    Skip lintian after building
+      --force-orig    Regenerate ../pauper_VERSION.orig.tar.gz
+  -h, --help          Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -b|--binary-only)
+            binary_only=1
+            ;;
+        --no-clean)
+            clean=0
+            ;;
+        --no-lintian)
+            run_lintian=0
+            ;;
+        --force-orig)
+            force_orig=1
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if command -v git >/dev/null 2>&1 && git rev-parse --show-toplevel >/dev/null 2>&1; then
+    repo_dir="$(git rev-parse --show-toplevel)"
+elif [[ -f debian/control ]]; then
+    repo_dir="$(pwd -P)"
+else
+    echo "Run this from the package source tree." >&2
+    exit 1
+fi
+
+cd "${repo_dir}"
+
+if ! command -v dpkg-buildpackage >/dev/null 2>&1; then
+    echo "dpkg-buildpackage is missing. Run script/furios-build-cached from the host or install build deps inside the container." >&2
+    exit 1
+fi
+
+package="$(dpkg-parsechangelog -SSource)"
+upstream_version="$(dpkg-parsechangelog -SVersion | sed 's/-[^-]*$//')"
+debian_version="$(dpkg-parsechangelog -SVersion)"
+arch="$(dpkg --print-architecture)"
+orig="../${package}_${upstream_version}.orig.tar.gz"
+
+if [[ "${binary_only}" -eq 0 ]]; then
+    if [[ "${force_orig}" -eq 1 || ! -f "${orig}" ]]; then
+        if ! command -v git >/dev/null 2>&1; then
+            echo "git is required to create ${orig}. Run script/furios-build-cached from the host or install build deps first." >&2
+            exit 1
+        fi
+
+        tag="v${upstream_version}"
+        if ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Missing upstream tag ${tag}; cannot create ${orig}" >&2
+            echo "Use --binary-only for a test build, or create ${tag} before a full source build." >&2
+            exit 1
+        fi
+
+        git archive --format=tar.gz \
+            --prefix="${package}-${upstream_version}/" \
+            -o "${orig}" \
+            "${tag}"
+    fi
+fi
+
+if [[ "${clean}" -eq 1 ]]; then
+    fakeroot debian/rules clean
+fi
+
+build_args=(-us -uc)
+if [[ "${binary_only}" -eq 1 ]]; then
+    build_args+=(-b)
+fi
+
+dpkg-buildpackage "${build_args[@]}"
+
+changes="../${package}_${debian_version}_${arch}.changes"
+if [[ "${run_lintian}" -eq 1 && -f "${changes}" ]]; then
+    lintian "${changes}" || true
+fi
+
+mkdir -p "${artifact_dir}"
+shopt -s nullglob
+artifacts=(
+    "../${package}_${upstream_version}.orig.tar."*
+    "../${package}_${debian_version}.dsc"
+    "../${package}_${debian_version}.debian.tar."*
+    "../${package}_${debian_version}_${arch}.buildinfo"
+    "../${package}_${debian_version}_${arch}.changes"
+    "../${package}_${debian_version}_${arch}.deb"
+)
+
+for artifact in "${artifacts[@]}"; do
+    if [[ -e "${artifact}" ]]; then
+        mv -f "${artifact}" "${artifact_dir}/"
+    fi
+done
+
+echo "Artifacts written to ${artifact_dir}/"

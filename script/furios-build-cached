@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cache="${FURIOS_APT_CACHE:-http://host.containers.internal:3142}"
+
+if ! command -v furios-shell >/dev/null 2>&1; then
+    echo "Missing furios-shell on PATH." >&2
+    echo "Install the generic tools from https://github.com/mike-cr/furios-build." >&2
+    exit 1
+fi
+
+if ! apt_setup="$(command -v furios-apt-setup)"; then
+    echo "Missing furios-apt-setup on PATH." >&2
+    echo "Install the generic tools from https://github.com/mike-cr/furios-build." >&2
+    exit 1
+fi
+
+{
+    sed '1{/^#!/d;}' "${apt_setup}"
+    cat <<'SCRIPT'
+./script/furios-setup-pauper-apt
+apt install -y build-essential devscripts dpkg-dev fakeroot lintian
+apt build-dep -y .
+./script/furios-build-deb "$@"
+SCRIPT
+} | FURIOS_APT_CACHE="${cache}" furios-shell bash -s -- "$@"

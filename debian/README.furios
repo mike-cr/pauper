@@ -1,0 +1,166 @@
+FuriOS packaging workflow for Pauper
+====================================
+
+This branch packages Pauper for FuriOS forky on arm64. Build in a FuriOS
+container, not directly on the Arch or Ubuntu host, so dependencies and Python
+ABI match the target device.
+
+Generic build tools
+-------------------
+
+Container creation, apt setup, and generic package builds live in the separate
+tooling repository:
+
+    https://github.com/mike-cr/furios-build
+
+Install those tools and make sure their bin directory is on PATH. This package
+repository keeps only Pauper-specific helpers.
+
+Pauper-specific helpers:
+
+* script/furios-build-deb
+* script/furios-smoke-deb
+* script/furios-build-cached
+* script/furios-build-and-smoke
+
+Container assumptions
+---------------------
+
+The host has a rootless Podman image named:
+
+    localhost/furios-forky-arm64:latest
+
+Create or recreate it with the generic tools:
+
+    furios-create-container --force
+
+Verify:
+
+    furios-shell dpkg --print-architecture
+
+Expected output:
+
+    arm64
+
+Cached builds
+-------------
+
+If apt-cacher-ng is running on the host and supports the HTTPS/// rewrite mode,
+use the Pauper wrapper:
+
+    script/furios-build-cached --binary-only
+
+Build and run the smoke test in one container:
+
+    script/furios-build-and-smoke --binary-only
+
+For a full source and binary build:
+
+    script/furios-build-cached
+
+The wrapper defaults to:
+
+    FURIOS_APT_CACHE=http://host.containers.internal:3142
+
+Override if needed:
+
+    FURIOS_APT_CACHE=http://host.containers.internal:3142 script/furios-build-cached --binary-only
+
+What the wrapper runs inside the container:
+
+    furios-apt-setup, streamed in from the host
+    ./script/furios-setup-pauper-apt
+    apt install -y build-essential devscripts dpkg-dev fakeroot lintian
+    apt build-dep -y .
+    ./script/furios-build-deb
+
+Pauper's wrapper adds the public Mike FuriPhone repository so apt can resolve
+the packaged piper-tts dependency:
+
+    https://pub.furiphone.repo.lmao.wang
+
+Override the repo or key URL if needed:
+
+    PAUPER_APT_REPO_URL=https://example.invalid/repo script/furios-build-cached --binary-only
+    PAUPER_APT_REPO_KEY_URL=https://example.invalid/key.asc script/furios-build-cached --binary-only
+
+Manual build
+------------
+
+Start an interactive FuriOS container from this repository:
+
+    furios-shell
+
+Then inside the container:
+
+    furios-apt-setup, streamed in from the host if using the wrapper
+    ./script/furios-setup-pauper-apt
+    apt install -y build-essential devscripts dpkg-dev fakeroot lintian
+    apt build-dep -y .
+    ./script/furios-build-deb --binary-only
+
+For a full source and binary build:
+
+    ./script/furios-build-deb
+
+Build helper behavior
+---------------------
+
+script/furios-build-deb:
+
+* creates ../pauper_VERSION.orig.tar.gz from the vVERSION tag when needed
+* runs fakeroot debian/rules clean
+* runs dpkg-buildpackage -us -uc
+* runs lintian on the generated .changes file when present
+* collects generated artifacts into build-artifacts/
+
+Full source builds require a matching upstream tag, for example `v0.2` for
+version 0.2. Use `--binary-only` for quick test builds before tagging a release.
+
+Useful options:
+
+    script/furios-build-deb --binary-only
+    script/furios-build-deb --force-orig
+    script/furios-build-deb --no-clean
+    script/furios-build-deb --no-lintian
+
+Verify
+------
+
+Inside the container after building:
+
+    ./script/furios-smoke-deb
+
+This installs the generated .deb and checks:
+
+* pauper-cli version
+* pauper-cli --help
+* pauperd --help
+* imports for piper, pauper.client, pauper.daemon, and pauper.gui
+
+Artifacts
+---------
+
+Builds collect generated files into the ignored build-artifacts/ directory in
+the repository. For example:
+
+    build-artifacts/pauper_0.2.orig.tar.gz
+    build-artifacts/pauper_0.2.dsc
+    build-artifacts/pauper_0.2.debian.tar.xz
+    build-artifacts/pauper_0.2_arm64.deb
+    build-artifacts/pauper_0.2_arm64.changes
+    build-artifacts/pauper_0.2_arm64.buildinfo
+
+Publish
+-------
+
+Example with reprepro:
+
+    reprepro -b /path/to/repo includedsc forky build-artifacts/pauper_0.2.dsc
+    reprepro -b /path/to/repo includedeb forky build-artifacts/pauper_0.2_arm64.deb
+
+Implementation notes
+--------------------
+
+The package depends on the FuriOS/Debian piper-tts package. Pauper no longer
+installs Piper privately with pip during package configuration.

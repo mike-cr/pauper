@@ -12,8 +12,6 @@ import sys
 import threading
 from typing import Any
 
-from .paths import private_python_dir
-
 
 class BlockOnnxPackage(importlib.abc.MetaPathFinder):
     """Prevent the separate onnx package from sharing this process with ORT."""
@@ -27,13 +25,6 @@ class BlockOnnxPackage(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockOnnxPackage())
 
 import onnxruntime
-
-PRIVATE_PYTHON = private_python_dir()
-if PRIVATE_PYTHON.exists():
-    # Keep apt-provided modules ahead of Pauper's private Piper target. Stale
-    # pip-installed onnx/onnxruntime copies in the private directory can clash
-    # with the system ONNX Runtime native extension.
-    sys.path.append(str(PRIVATE_PYTHON))
 
 from piper import PiperVoice, SynthesisConfig
 from piper.voice import ESPEAK_DATA_DIR, PiperConfig

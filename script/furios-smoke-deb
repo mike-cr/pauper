@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -gt 1 ]]; then
+    echo "Usage: script/furios-smoke-deb [path-to-deb]" >&2
+    exit 1
+fi
+
+if ! command -v apt >/dev/null 2>&1; then
+    echo "This script must run inside the FuriOS build container." >&2
+    exit 1
+fi
+
+deb="${1:-}"
+if [[ -z "${deb}" ]]; then
+    package="$(dpkg-parsechangelog -SSource)"
+    version="$(dpkg-parsechangelog -SVersion)"
+    arch="$(dpkg --print-architecture)"
+    deb="./build-artifacts/${package}_${version}_${arch}.deb"
+    if [[ ! -f "${deb}" ]]; then
+        deb="../${package}_${version}_${arch}.deb"
+    fi
+fi
+
+if [[ ! -f "${deb}" ]]; then
+    echo "Package not found: ${deb}" >&2
+    exit 1
+fi
+
+./script/furios-setup-pauper-apt
+apt install -y "${deb}"
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/pauper-runtime}"
+mkdir -p "${XDG_RUNTIME_DIR}"
+chmod 700 "${XDG_RUNTIME_DIR}"
+
+pauper-cli version
+pauper-cli --help >/dev/null
+pauperd --help >/dev/null
+python3 -c "import piper; import pauper.client; import pauper.daemon; import pauper.gui; print('import ok')"
