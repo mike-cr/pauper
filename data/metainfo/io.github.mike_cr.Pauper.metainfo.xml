@@ -29,19 +29,24 @@
   </branding>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/downloaded.png</image>
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/master/data/screenshots/downloaded.png</image>
       <caption>Browse downloaded voices and choose the synthesis voice</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/settings.png</image>
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/master/data/screenshots/settings.png</image>
       <caption>Configure loading behavior, audio output, and ONNX provider</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/mike-cr/pauper/main/data/screenshots/about.png</image>
+      <image>https://raw.githubusercontent.com/mike-cr/pauper/master/data/screenshots/about.png</image>
       <caption>View app information and project links</caption>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.2" date="2026-07-06">
+      <description>
+        <p>Fix screenshot links in the application metadata.</p>
+      </description>
+    </release>
     <release version="0.2.1" date="2026-07-06">
       <description>
         <p>Update the application version shown in the about page.</p>

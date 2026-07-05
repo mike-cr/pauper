@@ -114,8 +114,8 @@ script/furios-build-deb:
 * runs lintian on the generated .changes file when present
 * collects generated artifacts into build-artifacts/
 
-Full source builds require a matching upstream tag, for example `v0.2.1` for
-version 0.2.1. Use `--binary-only` for quick test builds before tagging a
+Full source builds require a matching upstream tag, for example `v0.2.2` for
+version 0.2.2. Use `--binary-only` for quick test builds before tagging a
 release.
 
 Useful options:
@@ -145,20 +145,20 @@ Artifacts
 Builds collect generated files into the ignored build-artifacts/ directory in
 the repository. For example:
 
-    build-artifacts/pauper_0.2.1.orig.tar.gz
-    build-artifacts/pauper_0.2.1.dsc
-    build-artifacts/pauper_0.2.1.debian.tar.xz
-    build-artifacts/pauper_0.2.1_arm64.deb
-    build-artifacts/pauper_0.2.1_arm64.changes
-    build-artifacts/pauper_0.2.1_arm64.buildinfo
+    build-artifacts/pauper_0.2.2.orig.tar.gz
+    build-artifacts/pauper_0.2.2.dsc
+    build-artifacts/pauper_0.2.2.debian.tar.xz
+    build-artifacts/pauper_0.2.2_arm64.deb
+    build-artifacts/pauper_0.2.2_arm64.changes
+    build-artifacts/pauper_0.2.2_arm64.buildinfo
 
 Publish
 -------
 
 Example with reprepro:
 
-    reprepro -b /path/to/repo includedsc forky build-artifacts/pauper_0.2.1.dsc
-    reprepro -b /path/to/repo includedeb forky build-artifacts/pauper_0.2.1_arm64.deb
+    reprepro -b /path/to/repo includedsc forky build-artifacts/pauper_0.2.2.dsc
+    reprepro -b /path/to/repo includedeb forky build-artifacts/pauper_0.2.2_arm64.deb
 
 Implementation notes
 --------------------
