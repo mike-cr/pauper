@@ -1,3 +1,10 @@
+pauper (0.2.1) unstable; urgency=medium
+
+  * Update the application version reported by the GTK about page and
+    pauper-cli version.
+
+ -- pauper contributors <noreply@example.invalid>  Mon, 06 Jul 2026 05:16:20 +1200
+
 pauper (0.2) unstable; urgency=medium
 
   * Depend on the packaged piper-tts instead of installing Piper privately
